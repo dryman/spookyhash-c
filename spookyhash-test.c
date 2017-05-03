@@ -4,7 +4,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "spookyhash.h"
@@ -17,13 +19,12 @@ struct rand {
   uint64_t d;
 };
 
-static inline uint64_t nanos() {
+static inline uint64_t micros() {
 
-  struct timespec t;
+  struct timeval t;
+  gettimeofday(&t, NULL);
 
-  clock_gettime(CLOCK_MONOTONIC, &t);
-
-  return (t.tv_sec * 1000000000) + t.tv_nsec;
+  return (t.tv_sec * 1000000) + t.tv_usec;
 }
 
 static inline uint64_t value(struct rand* r) {
@@ -184,35 +185,35 @@ void do_timing_big(int seed) {
     memset(buf[i], (char)seed, BUFSIZE);
   }
 
-  uint64_t a = nanos();
+  uint64_t a = micros();
   uint64_t hash1 = seed;
   uint64_t hash2 = seed;
   for (uint64_t i = 0; i < NUMBUF; ++i) {
     spookyhash128(buf[i], BUFSIZE, &hash1, &hash2);
   }
-  uint64_t z = nanos();
-  printf("spookyhash128, uncached: time is %4ld nanoseconds\n", z - a);
+  uint64_t z = micros();
+  printf("spookyhash128, uncached: time is %4ld microseconds\n", z - a);
 
-  a = nanos();
+  a = micros();
   for (uint64_t i = 0; i < NUMBUF; ++i) {
     add(buf[i], BUFSIZE, &hash1, &hash2);
   }
-  z = nanos();
-  printf("addition           , uncached: time is %4ld nanoseconds\n", z - a);
+  z = micros();
+  printf("addition           , uncached: time is %4ld microseconds\n", z - a);
 
-  a = nanos();
+  a = micros();
   for (uint64_t i = 0; i < NUMBUF * BUFSIZE / 1024; ++i) {
     spookyhash128(buf[0], 1024, &hash1, &hash2);
   }
-  z = nanos();
-  printf("spookyhash128,   cached: time is %4ld nanoseconds\n", z - a);
+  z = micros();
+  printf("spookyhash128,   cached: time is %4ld microseconds\n", z - a);
 
-  a = nanos();
+  a = micros();
   for (uint64_t i = 0; i < NUMBUF * BUFSIZE / 1024; ++i) {
     add(buf[0], 1024, &hash1, &hash2);
   }
-  z = nanos();
-  printf("addition           ,   cached: time is %4ld nanoseconds\n", z - a);
+  z = micros();
+  printf("addition           ,   cached: time is %4ld microseconds\n", z - a);
 
   for (int i = 0; i < NUMBUF; ++i) {
     free(buf[i]);
@@ -235,13 +236,13 @@ void do_timing_small(int seed) {
   }
 
   for (int i = 1; i <= BUFSIZE; i <<= 1) {
-    uint64_t a = nanos();
+    uint64_t a = micros();
     uint64_t hash1 = seed;
     uint64_t hash2 = seed + i;
     for (int j = 0; j < NUMITER; ++j) {
       spookyhash128((char*)buf, i, &hash1, &hash2);
     }
-    uint64_t z = nanos();
+    uint64_t z = micros();
     printf("%d bytes: hash is %.16lx %.16lx, time is %ld\n", i, hash1, hash2,
            z - a);
   }
