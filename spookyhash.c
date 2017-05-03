@@ -26,7 +26,7 @@ static void spookyhash_short(const void* message, size_t length,
   // short hash ... it could be used on any message,
   // but it's used by spooky just for short messages.
 
-  uint64_t buf[2 * sc_num_vars];
+  uint64_t buf[2 * SC_NUM_VARS];
 
   union {
 
@@ -130,14 +130,14 @@ static void spookyhash_short(const void* message, size_t length,
 void spookyhash128(const void* message, size_t length, uint64_t* hash1,
                    uint64_t* hash2) {
 
-  if (length < sc_buf_size) {
+  if (length < SC_BUF_SIZE) {
 
     spookyhash_short(message, length, hash1, hash2);
     return;
   }
 
   uint64_t h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11;
-  uint64_t buf[sc_num_vars];
+  uint64_t buf[SC_NUM_VARS];
   size_t remainder;
   uint64_t* end;
 
@@ -153,36 +153,36 @@ void spookyhash128(const void* message, size_t length, uint64_t* hash1,
   h2 = h5 = h8 = h11 = sc_const;
 
   u.p8 = (const uint8_t*)message;
-  end = u.p64 + (length / sc_block_size) * sc_num_vars;
+  end = u.p64 + (length / SC_BLOCK_SIZE) * SC_NUM_VARS;
 
-  // handle all whole sc_block_size blocks of bytes
+  // handle all whole SC_BLOCK_SIZE blocks of bytes
   if (ALLOW_UNALIGNED_READS || ((u.i & 0x7) == 0)) {
 
     while (u.p64 < end) {
 
       spookyhash_mix(u.p64, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9,
                      &h10, &h11);
-      u.p64 += sc_num_vars;
+      u.p64 += SC_NUM_VARS;
     }
   } else {
 
     while (u.p64 < end) {
 
-      memcpy(buf, u.p64, sc_block_size);
+      memcpy(buf, u.p64, SC_BLOCK_SIZE);
       spookyhash_mix(buf, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9,
                      &h10, &h11);
 
-      u.p64 += sc_num_vars;
+      u.p64 += SC_NUM_VARS;
     }
   }
 
-  // handle the last partial block of sc_block_size bytes
+  // handle the last partial block of SC_BLOCK_SIZE bytes
   remainder = (length - ((const uint8_t*)end - (const uint8_t*)message));
 
   memcpy(buf, end, remainder);
-  memset(((uint8_t*)buf) + remainder, 0, sc_block_size - remainder);
+  memset(((uint8_t*)buf) + remainder, 0, SC_BLOCK_SIZE - remainder);
 
-  ((uint8_t*)buf)[sc_block_size - 1] = remainder;
+  ((uint8_t*)buf)[SC_BLOCK_SIZE - 1] = remainder;
 
   // do some final mixing
   spookyhash_end(buf, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
@@ -216,7 +216,7 @@ void spookyhash_update(const void* message, size_t length,
   } u;
 
   // is this message fragment too short, if it is, stuff it away
-  if (new_length < sc_buf_size) {
+  if (new_length < SC_BUF_SIZE) {
 
     memcpy(&((uint8_t*)state->data)[state->remainder], message, length);
 
@@ -226,7 +226,7 @@ void spookyhash_update(const void* message, size_t length,
   }
 
   // init the variables
-  if (state->length < sc_buf_size) {
+  if (state->length < SC_BUF_SIZE) {
 
     h0 = h3 = h6 = h9 = state->vars[0];
     h1 = h4 = h7 = h10 = state->vars[1];
@@ -252,7 +252,7 @@ void spookyhash_update(const void* message, size_t length,
   // if we've got anything stuffed away, use it now
   if (state->remainder) {
 
-    uint8_t prefix = sc_buf_size - state->remainder;
+    uint8_t prefix = SC_BUF_SIZE - state->remainder;
 
     memcpy(&(((uint8_t*)state->data)[state->remainder]), message, prefix);
 
@@ -260,7 +260,7 @@ void spookyhash_update(const void* message, size_t length,
 
     spookyhash_mix(u.p64, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9,
                    &h10, &h11);
-    spookyhash_mix(&u.p64[sc_num_vars], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7,
+    spookyhash_mix(&u.p64[SC_NUM_VARS], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7,
                    &h8, &h9, &h10, &h11);
 
     u.p8 = ((const uint8_t*)message) + prefix;
@@ -271,8 +271,8 @@ void spookyhash_update(const void* message, size_t length,
     u.p8 = (const uint8_t*)message;
   }
 
-  // handle all whole blocks of sc_block_size bytes
-  end = u.p64 + (length / sc_block_size) * sc_num_vars;
+  // handle all whole blocks of SC_BLOCK_SIZE bytes
+  end = u.p64 + (length / SC_BLOCK_SIZE) * SC_NUM_VARS;
   remainder = (uint8_t)(length - ((const uint8_t*)end - u.p8));
 
   if (ALLOW_UNALIGNED_READS || (u.i & 0x7) == 0) {
@@ -281,16 +281,16 @@ void spookyhash_update(const void* message, size_t length,
 
       spookyhash_mix(u.p64, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9,
                      &h10, &h11);
-      u.p64 += sc_num_vars;
+      u.p64 += SC_NUM_VARS;
     }
   } else {
 
     while (u.p64 < end) {
 
-      memcpy(state->data, u.p8, sc_block_size);
+      memcpy(state->data, u.p8, SC_BLOCK_SIZE);
       spookyhash_mix(state->data, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8,
                      &h9, &h10, &h11);
-      u.p64 += sc_num_vars;
+      u.p64 += SC_NUM_VARS;
     }
   }
 
@@ -317,7 +317,7 @@ void spookyhash_update(const void* message, size_t length,
 void spookyhash_final(uint64_t* hash1, uint64_t* hash2, spooky_state* state) {
 
   // init the variables
-  if (state->length < sc_buf_size) {
+  if (state->length < SC_BUF_SIZE) {
 
     *hash1 = state->vars[0];
     *hash2 = state->vars[1];
@@ -342,19 +342,19 @@ void spookyhash_final(uint64_t* hash1, uint64_t* hash2, spooky_state* state) {
   uint64_t h10 = state->vars[10];
   uint64_t h11 = state->vars[11];
 
-  if (remainder >= sc_block_size) {
+  if (remainder >= SC_BLOCK_SIZE) {
 
     // state->data can contain two blocks; handle any whole first block
     spookyhash_mix(data, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10,
                    &h11);
-    data += sc_num_vars;
-    remainder -= sc_block_size;
+    data += SC_NUM_VARS;
+    remainder -= SC_BLOCK_SIZE;
   }
 
-  // mix in the last partial block, and the length mod sc_block_size
-  memset(&((uint8_t*)data)[remainder], 0, sc_block_size - remainder);
+  // mix in the last partial block, and the length mod SC_BLOCK_SIZE
+  memset(&((uint8_t*)data)[remainder], 0, SC_BLOCK_SIZE - remainder);
 
-  ((uint8_t*)data)[sc_block_size - 1] = remainder;
+  ((uint8_t*)data)[SC_BLOCK_SIZE - 1] = remainder;
 
   // do some final mixing
   spookyhash_end(data, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);

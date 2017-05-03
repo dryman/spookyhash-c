@@ -31,13 +31,11 @@
 #include <stdint.h>
 
 // @var sc_num_vars number of uint64_t's in internal state
-static const size_t sc_num_vars = 12;
-
+#define SC_NUM_VARS 12
 // @var sc_block_size size of the internal state
-static const size_t sc_block_size = sc_num_vars * 8;
-
+#define SC_BLOCK_SIZE (SC_NUM_VARS * 8)
 // @var sc_buf_size size of buffer of unhashed data, in bytes
-static const size_t sc_buf_size = 2 * sc_block_size;
+#define SC_BUF_SIZE (2 * SC_BLOCK_SIZE)
 
 // @var sc_const a constant which is not zero, is odd, is a not-very-regular mix
 // of 1's and 0's
@@ -45,8 +43,8 @@ static const uint64_t sc_const = 0xdeadbeefdeadbeef;
 
 struct spooky_state {
 
-  uint64_t data[2 * sc_num_vars]; // unhashed data, for partial messages
-  uint64_t vars[sc_num_vars];     // internal state of the hash
+  uint64_t data[2 * SC_NUM_VARS]; // unhashed data, for partial messages
+  uint64_t vars[SC_NUM_VARS];     // internal state of the hash
   size_t length;                  // total length of the input so far
   uint8_t remainder;              // length of unhashed data stashed in m_data
 };
